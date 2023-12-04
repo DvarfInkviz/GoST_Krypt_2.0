@@ -64,6 +64,7 @@ class Fpga:
         self.fpga = _type
         self.lib_dir = _lib
         self.cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{self.cam}_{self.fpga}.pof")
+        self.cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{self.cam}_cyc.pof")
         self.error_ini = False
         for root, dirs, files in os.walk(start_folder):
             for file in files:
@@ -111,7 +112,7 @@ class Fpga:
                 self.error_ini = True
 
     def run(self):
-        if not self.error_ini and not os.path.isfile(self.cam_file):
+        if not self.error_ini and not os.path.isfile(self.cam_file) and not os.path.isfile(self.cam_file2):
             self.edit_files()
             if self.compile():
                 tqdm.write(f'{self.fpga} compilation OK')
@@ -123,6 +124,9 @@ class Fpga:
             else:
                 tqdm.write(f'{self.fpga} compilation ERROR - need recompile!')
                 return False
+        else:
+            print('File Exist')
+            return True
 
     def edit_files(self):
         tqdm.write(f'Замена констант для {self.fpga}')
