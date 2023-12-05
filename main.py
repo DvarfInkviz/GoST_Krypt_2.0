@@ -181,9 +181,9 @@ class Fpga:
 if len(sys.argv) == 1:
     print('Not enouth arguments')
 else:
-    _start = sys.argv[1]
+    _start = int(sys.argv[1])
     if len(sys.argv) >= 3:
-        _end = sys.argv[2] + 1
+        _end = int(sys.argv[2]) + 1
     else:
         _end = _start + 1
     error_compilation = False
