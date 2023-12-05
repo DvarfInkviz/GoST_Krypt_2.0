@@ -6,13 +6,14 @@
 # Lyashko A.A. 21 Nov 2023              #
 # Script GoST Compilation.py v.1.0      #
 #                                       #
-#########################################################################
+#########################################
 import os
 import subprocess
 from datetime import datetime
 import secrets
 import shutil
 from tqdm import tqdm
+import sys
 
 
 def const_edit(name, new_value):
@@ -177,28 +178,36 @@ class Fpga:
             return False
 
 
-error_compilation = False
-for number in tqdm(range(14330, 14355), ncols=80, ascii=True):
-    if error_compilation == 2:
-        tqdm.write('ERROR in projects - STOP!')
-        break
-    tqdm.write(f'-=CAM #{number}=-')
-    cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_max.pof")
-    cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_cyc.pof")
-    if os.path.isfile(cam_file) and os.path.isfile(cam_file2):
-        error_compilation = True
+if len(sys.argv) == 1:
+    print('Not enouth arguments')
+else:
+    _start = sys.argv[1]
+    if len(sys.argv) >= 3:
+        _end = sys.argv[2] + 1
     else:
-        if os.path.isfile(cam_file):
-            os.remove(cam_file)
-        if os.path.isfile(cam_file2):
-            os.remove(cam_file2)
-    while not error_compilation:
-        keys = [secrets.token_hex(4) for i in range(0, 8)]
-        max_project = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\MAX_28042018_restored_2"),
-                           _keys=keys, _module=number, _type='max', _lib='GOST_MAX_LIB')
-        error_compilation = max_project.run()
-        if error_compilation:
-            cyc = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\CYCL_28042018_restored3"),
-                       _keys=keys, _module=number, _type='cyc', _lib='GOST_NEW_LIB')
-            error_compilation = cyc.run()
-    tqdm.write('==================')
+        _end = _start + 1
+    error_compilation = False
+    for number in tqdm(range(_start, _end), ncols=80, ascii=True):
+        if error_compilation == 2:
+            tqdm.write('ERROR in projects - STOP!')
+            break
+        tqdm.write(f'-=CAM #{number}=-')
+        cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_max.pof")
+        cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_cyc.pof")
+        if os.path.isfile(cam_file) and os.path.isfile(cam_file2):
+            error_compilation = True
+        else:
+            if os.path.isfile(cam_file):
+                os.remove(cam_file)
+            if os.path.isfile(cam_file2):
+                os.remove(cam_file2)
+        while not error_compilation:
+            keys = [secrets.token_hex(4) for i in range(0, 8)]
+            max_project = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\MAX_28042018_restored_2"),
+                               _keys=keys, _module=number, _type='max', _lib='GOST_MAX_LIB')
+            error_compilation = max_project.run()
+            if error_compilation:
+                cyc = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\CYCL_28042018_restored3"),
+                           _keys=keys, _module=number, _type='cyc', _lib='GOST_NEW_LIB')
+                error_compilation = cyc.run()
+        tqdm.write('==================')
