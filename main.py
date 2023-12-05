@@ -112,7 +112,7 @@ class Fpga:
                 self.error_ini = True
 
     def run(self):
-        if not self.error_ini and not os.path.isfile(self.cam_file) and not os.path.isfile(self.cam_file2):
+        if not self.error_ini:
             self.edit_files()
             if self.compile():
                 tqdm.write(f'{self.fpga} compilation OK')
@@ -125,8 +125,8 @@ class Fpga:
                 tqdm.write(f'{self.fpga} compilation ERROR - need recompile!')
                 return False
         else:
-            print('File Exist')
-            return True
+            tqdm.write(f'{self.fpga} project - ini ERROR!')
+            return 2
 
     def edit_files(self):
         tqdm.write(f'Замена констант для {self.fpga}')
@@ -157,12 +157,10 @@ class Fpga:
         tqdm.write('Начинается компиляция проекта')
         compile_result = qua_cmd('map', self.qpf, self.qsf, set_files='on')
         if compile_result:
-            tqdm.write('qua_map OK')
             compile_result = qua_cmd('fit', self.qpf, self.qsf, set_files='off')
         else:
             return False
         if compile_result:
-            tqdm.write('qua_fit OK')
             if self.fpga == 'max':
                 compile_result = qua_cmd('asm', self.qpf, self.qsf, set_files='on')
             else:
@@ -170,26 +168,36 @@ class Fpga:
         else:
             return False
         if compile_result:
-            tqdm.write('qua_asm OK')
             compile_result = qua_cmd('sta', self.qpf, self.qsf)
         else:
             return False
         if compile_result:
-            tqdm.write('qua_sta OK')
             return True
         else:
             return False
 
 
+error_compilation = False
 for number in tqdm(range(14330, 14355), ncols=80, ascii=True):
-    tqdm.write(str(datetime.now()))
+    if error_compilation == 2:
+        tqdm.write('ERROR in projects - STOP!')
+        break
     tqdm.write(f'-=CAM #{number}=-')
-    error_compilation = False
+    cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_max.pof")
+    cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_cyc.pof")
+    if os.path.isfile(cam_file) and os.path.isfile(cam_file2):
+        error_compilation = True
+    else:
+        if os.path.isfile(cam_file):
+            os.remove(cam_file)
+        if os.path.isfile(cam_file2):
+            os.remove(cam_file2)
     while not error_compilation:
         keys = [secrets.token_hex(4) for i in range(0, 8)]
         max_project = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\MAX_28042018_restored_2"),
                            _keys=keys, _module=number, _type='max', _lib='GOST_MAX_LIB')
-        if max_project.run():
+        error_compilation = max_project.run()
+        if error_compilation:
             cyc = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\CYCL_28042018_restored3"),
                        _keys=keys, _module=number, _type='cyc', _lib='GOST_NEW_LIB')
             error_compilation = cyc.run()
