@@ -58,16 +58,16 @@ def qua_cmd(qua_type, qpf, qsf, set_files=None):
 
 class Fpga:
 
-    def __init__(self, start_folder, _keys, _module, _type, _lib):
+    def __init__(self, project_folder, _folder, _keys, _module, _type, _lib):
         self.keys = _keys
         self.key32 = secrets.token_hex(8)
         self.cam = _module
         self.fpga = _type
         self.lib_dir = _lib
-        self.cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{self.cam}_{self.fpga}.pof")
-        self.cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{self.cam}_cyc.pof")
+        self.cam_file = os.path.normpath(fr"{_folder}\Modules\{self.cam}_{self.fpga}.pof")
+        self.cam_file2 = os.path.normpath(fr"{_folder}\Modules\{self.cam}_cyc.pof")
         self.error_ini = False
-        for root, dirs, files in os.walk(start_folder):
+        for root, dirs, files in os.walk(project_folder):
             for file in files:
                 if file.endswith('.qpf'):
                     self.qpf = os.path.join(root, file)
@@ -76,7 +76,7 @@ class Fpga:
                 if file.endswith('.pof'):
                     self.pof = os.path.join(root, file)
                     self.pof_date = os.path.getctime(self.pof)
-        self.const = os.path.join(start_folder, self.lib_dir)
+        self.const = os.path.join(project_folder, self.lib_dir)
         if self.fpga == 'max':
             if os.path.isfile(os.path.join(self.const, 'C_ML_TEST.tdf')):
                 self.ML = os.path.join(self.const, 'C_ML_TEST.tdf')
@@ -178,6 +178,8 @@ class Fpga:
             return False
 
 
+# PROJECT = r'R:\Niir\GostCrypt'
+PROJECT = r'c:\Users\Administrator\Documents\GoST'
 if len(sys.argv) == 1:
     print('Not enouth arguments')
 else:
@@ -186,28 +188,30 @@ else:
         _end = int(sys.argv[2]) + 1
     else:
         _end = _start + 1
-    error_compilation = False
+    error_compilation = 1
     for number in tqdm(range(_start, _end), ncols=80, ascii=True):
         if error_compilation == 2:
             tqdm.write('ERROR in projects - STOP!')
             break
         tqdm.write(f'-=CAM #{number}=-')
-        cam_file = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_max.pof")
-        cam_file2 = os.path.normpath(fr"R:\Niir\GostCrypt\Modules\{number}_cyc.pof")
+        cam_file = os.path.normpath(fr"{PROJECT}\Modules\{number}_max.pof")
+        cam_file2 = os.path.normpath(fr"{PROJECT}\Modules\{number}_cyc.pof")
         if os.path.isfile(cam_file) and os.path.isfile(cam_file2):
+            tqdm.write(f'Files {cam_file}, {cam_file2} exists')
             error_compilation = True
         else:
+            error_compilation = False
             if os.path.isfile(cam_file):
                 os.remove(cam_file)
             if os.path.isfile(cam_file2):
                 os.remove(cam_file2)
         while not error_compilation:
             keys = [secrets.token_hex(4) for i in range(0, 8)]
-            max_project = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\MAX_28042018_restored_2"),
-                               _keys=keys, _module=number, _type='max', _lib='GOST_MAX_LIB')
+            max_project = Fpga(project_folder=os.path.normpath(fr"{PROJECT}\Qua_projects\MAX_28042018_restored_2"),
+                               _keys=keys, _module=number, _type='max', _lib='GOST_MAX_LIB', _folder=PROJECT)
             error_compilation = max_project.run()
             if error_compilation:
-                cyc = Fpga(start_folder=os.path.normpath(r"R:\Niir\GostCrypt\Qua_projects\CYCL_28042018_restored3"),
-                           _keys=keys, _module=number, _type='cyc', _lib='GOST_NEW_LIB')
+                cyc = Fpga(project_folder=os.path.normpath(fr"{PROJECT}\Qua_projects\CYCL_28042018_restored3"),
+                           _keys=keys, _module=number, _type='cyc', _lib='GOST_NEW_LIB', _folder=PROJECT)
                 error_compilation = cyc.run()
         tqdm.write('==================')
